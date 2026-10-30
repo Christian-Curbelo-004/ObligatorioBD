@@ -1,0 +1,23 @@
+services:
+  mysql:
+    image: mysql:8.4                      # version de MySQL (la dejo en 8.4, la que ya elegiste)
+    container_name: mysql_local           # nombre del contenedor
+    restart: unless-stopped               # se reinicia solo si se cae
+    environment:
+      MYSQL_ROOT_PASSWORD: root12345      # clave de root
+      MYSQL_DATABASE: proyecto_bd         # base que se crea al iniciar
+      MYSQL_USER: usuario                 # usuario comun con permisos sobre proyecto_bd
+      MYSQL_PASSWORD: usuario12345        # clave de ese usuario
+      TZ: America/Montevideo              # zona horaria del contenedor
+    command: >
+      --default-time-zone=-03:00
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "3307:3306"                       # puerto de tu PC : puerto del contenedor
+    volumes:
+      - mysql_data:/var/lib/mysql         # los datos sobreviven a reinicios
+      - ./db/init:/docker-entrypoint-initdb.d   # scripts .sql que corren al crear la base
+
+volumes:
+  mysql_data:
