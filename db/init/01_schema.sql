@@ -13,16 +13,12 @@ INSERT INTO login (correo, password_hash, rol) VALUES       -- usuarios de prueb
 
 CREATE TABLE facultad(
     id_facultad INT NOT NULL PRIMARY KEY,
-    nombre VARCHAR(100) NOT NULL
-);
+    nombre VARCHAR(100) NOT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT INTO facultad(id_facultad, nombre) VALUES
-(1, 'Ingenieria'),
-(2,'Derecho'),
-(3, 'Medicina'),
-(4, 'Psicologia'),
-(5, 'Humanidades'),
-(6, 'Filosofia');
+(1, 'Ingenieria'), (2, 'Derecho'), (3, 'Medicina'),
+(4, 'Psicologia'), (5, 'Ciencias Empresariales'), (6, 'Humanidades');
 
 CREATE TABLE jugador(
     ci VARCHAR(8) NOT NULL PRIMARY KEY,
@@ -39,17 +35,7 @@ CREATE TABLE jugador(
     CONSTRAINT fk_jugador_facultad FOREIGN KEY (id_facultad) REFERENCES facultad (id_facultad)   /* la columna id_facultad */
 )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-/* casos de prueba */
-INSERT INTO jugador (ci, nombre, apellido, email, fecha_nacimiento, id_facultad, tipo)
-VALUES ('123', 'Ana', 'Perez', 'ana@ucu.edu.uy', '2000-05-10', 1, 'grado');     -- falla: ci de 3 digitos
 
-INSERT INTO jugador (ci, nombre, apellido, email, fecha_nacimiento, id_facultad, tipo)
-VALUES ('12345678', 'Ana', 'Perez', 'anaucu.edu.uy', '2000-05-10', 1, 'grado'); -- falla: email sin @
-
-INSERT INTO jugador (ci, nombre, apellido, email, fecha_nacimiento, id_facultad, tipo)
-VALUES ('12345678', 'Ana', 'Perez', 'ana@ucu.edu.uy', '2000-05-10', 1, 'grado'); -- pasa
-
-DELETE FROM jugador WHERE ci = '12345678'; -- limpia la prueba
 
 CREATE TABLE torneo (
     id_torneo    INT AUTO_INCREMENT PRIMARY KEY,
@@ -107,22 +93,10 @@ CREATE TABLE equipo_jugador_torneo (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
-INSERT INTO jugador (ci, nombre, apellido, email, fecha_nacimiento, id_facultad, tipo)
-VALUES ('12345678', 'Ana', 'Perez', 'ana@ucu.edu.uy', '2000-05-10', 1, 'grado');
 
-INSERT INTO equipo (nombre, id_torneo, id_facultad) VALUES ('Ingeniería FC', 1, 1);
-
-INSERT INTO equipo_jugador_torneo (ci_jugador, id_torneo, id_equipo, numero_camiseta)
-VALUES ('12345678', 1, 1, 10);   -- pasa
-
-INSERT INTO equipo_jugador_torneo (ci_jugador, id_torneo, id_equipo, numero_camiseta)
-VALUES ('12345678', 1, 1, 11);   -- falla: el jugador ya esta en un equipo de este torneo
-
-INSERT INTO equipo_jugador_torneo (ci_jugador, id_torneo, id_equipo, numero_camiseta)
-VALUES ('12345678', 1, 1, 100);  -- falla: camiseta fuera de 1-99
 
 CREATE TABLE complejo (
-    id_complejo INT NOT NULL PRIMARY KEY,
+    id_complejo INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
     direccion VARCHAR(100) NOT NULL,
     departamento VARCHAR(100) NOT NULL,
@@ -152,7 +126,7 @@ INSERT INTO cancha (nombre_cancha, id_complejo, superficie, techada) VALUES   --
     ('Cancha 2', 2, 'parquet',   TRUE);                     -- complejo 2: parquet techada
 
 CREATE TABLE turno (
-    id_turno    TINYINT AUTO_INCREMENT PRIMARY KEY,
+    id_turno    INT AUTO_INCREMENT PRIMARY KEY,
     hora_inicio TIME NOT NULL,
     hora_fin    TIME NOT NULL,
     CONSTRAINT uq_turno_inicio UNIQUE (hora_inicio),
@@ -230,14 +204,7 @@ CREATE TABLE planilla_partido (                             -- crea la tabla de 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;                    -- motor con FK y charset
 
 
-INSERT INTO planilla_partido (id_partido, ci_jugador, id_equipo)
-VALUES (1, '12345678', 1);    -- pasa
 
-INSERT INTO planilla_partido (id_partido, ci_jugador, id_equipo)
-VALUES (1, '12345678', 1);    -- falla: el jugador ya figura en este partido
-
-INSERT INTO planilla_partido (id_partido, ci_jugador, id_equipo)
-VALUES (99, '12345678', 1);   -- falla: el partido 99 no existe
 
 CREATE TABLE gol(
     id_gol     INT AUTO_INCREMENT PRIMARY KEY,              -- PK: id que asigna la base sola
@@ -251,14 +218,7 @@ CREATE TABLE gol(
         REFERENCES planilla_partido (id_partido, ci_jugador) -- ...debe figurar en la planilla de ese partido
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;                    -- motor con FK y charset
 
-INSERT INTO gol (id_partido, ci_jugador, minuto, autogol)
-VALUES (1, '12345678', 15, FALSE);   -- pasa
 
-INSERT INTO gol (id_partido, ci_jugador, minuto, autogol)
-VALUES (1, '12345678', 61, FALSE);   -- falla: minuto fuera de 1-60
-
-INSERT INTO gol (id_partido, ci_jugador, minuto, autogol)
-VALUES (1, '99999999', 20, FALSE);   -- falla: ese jugador no figura en la planilla
 
 
 
@@ -276,17 +236,6 @@ CREATE TABLE tarjeta (                                      -- crea la tabla de 
         REFERENCES planilla_partido (id_partido, ci_jugador) -- ...debe figurar en la planilla de ese partido
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;                    -- motor con FK y charset
 
-INSERT INTO tarjeta (id_partido, ci_jugador, minuto, color)
-VALUES (1, '12345678', 30, 'amarilla');   -- pasa
-
-INSERT INTO tarjeta (id_partido, ci_jugador, minuto, color)
-VALUES (1, '12345678', 45, 'verde');      -- falla: color no permitido
-
-INSERT INTO tarjeta (id_partido, ci_jugador, minuto, color)
-VALUES (1, '12345678', 0, 'roja');        -- falla: minuto fuera de 1-60
-
-INSERT INTO tarjeta (id_partido, ci_jugador, minuto, color)
-VALUES (1, '99999999', 20, 'roja');       -- falla: ese jugador no figura en la planilla
 
 
 CREATE TABLE sancion_jugador (                              -- crea la tabla de sanciones
@@ -313,5 +262,4 @@ CREATE TABLE sancion_jugador (                              -- crea la tabla de 
         REFERENCES tarjeta (id_tarjeta),                    -- ...debe existir (NULL permitido)
     INDEX idx_sancion_jugador (ci_jugador, id_torneo, numero_fecha_inicio, numero_fecha_fin) -- acelera "esta suspendido?"
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;                    -- motor con FK y charset
-
 
