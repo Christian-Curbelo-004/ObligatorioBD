@@ -21,27 +21,27 @@ BEGIN
     IF NOW() > TIMESTAMP (v_dia, v_fin) + INTERVAL 48 HOUR THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Pasaron mas de 48 horas del partido';
     END IF;
 
-END $$;
+END $$
 
-/* Planilla */
+
 CREATE TRIGGER trg_planilla_ventana_bi BEFORE INSERT ON planilla_partido FOR EACH ROW BEGIN CALL sp_validar_ventana(NEW.id_partido);
-END $$;
+END $$
 
 CREATE TRIGGER trg_planilla_ventana_bd BEFORE DELETE ON planilla_partido FOR EACH ROW BEGIN CALL sp_validar_ventana(OLD.id_partido);
-END $$;
+END $$
 
 /* GOL */
 
 CREATE TRIGGER trg_gol_ventana_bi BEFORE INSERT ON gol FOR EACH ROW BEGIN CALL sp_validar_ventana(NEW.id_partido);
-END $$;
+END $$
 
 CREATE TRIGGER trg_gol_ventana_bd BEFORE DELETE ON gol FOR EACH ROW BEGIN CALL sp_validar_ventana(OLD.id_partido);
-END $$;
+END $$
 
 CREATE TRIGGER trg_gol_ventana_bu BEFORE UPDATE ON gol FOR EACH ROW BEGIN CALL sp_validar_ventana(OLD.id_partido);
 IF NOT (NEW.id_partido <=> OLD.id_partido) THEN CALL sp_validar_ventana(NEW.id_partido);
     END IF;
-END $$;
+END $$
 
 -- TARJETA (el UPDATE ya esta bloqueado en 03_triggers_planilla.sql)
 CREATE TRIGGER trg_tarjeta_ventana_bi
@@ -56,14 +56,7 @@ BEFORE DELETE ON tarjeta
 FOR EACH ROW
 BEGIN
     CALL sp_validar_ventana(OLD.id_partido);
-END $$;
+END $$
 
 DELIMITER ;
 
-SHOW TRIGGERS;   -- deben salir 23: 11 del 02, 5 del 03 y 7 de este archivo
-
--- Partido 1 es de septiembre: debe FALLAR por la ventana de 48 h
-INSERT INTO gol (id_partido, ci_jugador, minuto, autogol) VALUES (1, '51000001', 5, FALSE);
-
--- Partido 9 esta postergado: debe FALLAR
-INSERT INTO planilla_partido (id_partido, ci_jugador, id_equipo) VALUES (9, '56000001', 6);
