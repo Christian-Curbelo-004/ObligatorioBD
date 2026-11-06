@@ -30,7 +30,7 @@ class TestLogin(unittest.TestCase):
     def test_login_exitoso_devuelve_token(self, mock_db):
         mock_db.query_one.return_value = {
             "correo": "admin@test.com",
-            "contraseña": generate_password_hash("secreto"),
+            "password_hash": generate_password_hash("secreto"),
             "rol": "administrador",
         }
         resp = self.client.post("/auth/login", json={"correo": "admin@test.com", "password": "secreto"})
@@ -43,7 +43,7 @@ class TestLogin(unittest.TestCase):
     def test_login_password_incorrecto_401(self, mock_db):
         mock_db.query_one.return_value = {
             "correo": "admin@test.com",
-            "contraseña": generate_password_hash("correcto"),
+            "password_hash": generate_password_hash("correcto"),
             "rol": "administrador",
         }
         resp = self.client.post("/auth/login", json={"correo": "admin@test.com", "password": "incorrecto"})
@@ -71,7 +71,7 @@ class TestLogin(unittest.TestCase):
     def test_token_contiene_rol_planillero(self, mock_db):
         mock_db.query_one.return_value = {
             "correo": "p@test.com",
-            "contraseña": generate_password_hash("pw"),
+            "password_hash": generate_password_hash("pw"),
             "rol": "planillero",
         }
         resp = self.client.post("/auth/login", json={"correo": "p@test.com", "password": "pw"})

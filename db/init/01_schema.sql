@@ -7,8 +7,8 @@ CREATE TABLE login(
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT INTO login (correo, password_hash, rol) VALUES       -- usuarios de prueba
-    ('admin@ucu.edu.uy',      'HASH_ADMIN_DE_PRUEBA',      'administrador'),  -- el rol coincide con el ENUM
-    ('planillero@ucu.edu.uy', 'HASH_PLANILLERO_DE_PRUEBA', 'planillero');     -- se reemplaza por un hash real mas adelante
+    ('admin@ucu.edu.uy',      'scrypt:32768:8:1$NKqOv0qpzgXnVKjQ$f8abe76045d2014d45774be3e5bc6b200537a144a1d59949eaf89af3d314357e3511b4f05e722451dc65765092d7ce06a146d362888da8710994d0f41327ba6d', 'administrador'),  -- contraseña: admin123
+    ('planillero@ucu.edu.uy', 'scrypt:32768:8:1$oBV0H2RhcWGN7HOh$a8c17c436a5dde36eb4640e9ec78cc74ad66daa444624c12f79fce9f9a4df00e357227ea8eb8a53da26c6ca2939949d8c19b488d36efbc0bf56c7c9c19a5f26c', 'planillero');     -- contraseña: plan123
 
 
 CREATE TABLE facultad(
