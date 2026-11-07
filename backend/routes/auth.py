@@ -18,7 +18,7 @@ def login():
         return jsonify({"error": "correo y password requeridos"}), 400
 
     user = db.query_one("SELECT * FROM login WHERE correo = %s", (correo,))
-    if not user or not check_password_hash(user["contraseña"], password):
+    if not user or not check_password_hash(user["password_hash"], password):
         return jsonify({"error": "Credenciales inválidas"}), 401
 
     exp = datetime.now(timezone.utc) + timedelta(hours=config.JWT_EXP_H)
@@ -46,7 +46,7 @@ def register():
     hashed = generate_password_hash(password)
     try:
         db.execute(
-            "INSERT INTO login (correo, contraseña, rol) VALUES (%s, %s, %s)",
+            "INSERT INTO login (correo, password_hash, rol) VALUES (%s, %s, %s)",
             (correo, hashed, rol),
         )
     except Exception as e:
