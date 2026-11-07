@@ -20,34 +20,43 @@ def get_conn():
 
 def query_one(sql, params=None):
     conn = get_conn()
-    cur = conn.cursor(dictionary=True)
-    cur.execute(sql, params or ())
-    row = cur.fetchone()
-    cur.close()
-    conn.close()
-    return row
+    try:
+        cur = conn.cursor(dictionary=True)
+        cur.execute(sql, params or ())
+        row = cur.fetchone()
+        cur.close()
+        return row
+    finally:
+        conn.close()
 
 
 def query_all(sql, params=None):
     conn = get_conn()
-    cur = conn.cursor(dictionary=True)
-    cur.execute(sql, params or ())
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
-    return rows
+    try:
+        cur = conn.cursor(dictionary=True)
+        cur.execute(sql, params or ())
+        rows = cur.fetchall()
+        cur.close()
+        return rows
+    finally:
+        conn.close()
 
 
 def execute(sql, params=None):
     """Run INSERT/UPDATE/DELETE; return (lastrowid, rowcount)."""
     conn = get_conn()
-    cur = conn.cursor()
-    cur.execute(sql, params or ())
-    conn.commit()
-    result = (cur.lastrowid, cur.rowcount)
-    cur.close()
-    conn.close()
-    return result
+    try:
+        cur = conn.cursor()
+        cur.execute(sql, params or ())
+        conn.commit()
+        result = (cur.lastrowid, cur.rowcount)
+        cur.close()
+        return result
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
 
 def execute_many(statements):

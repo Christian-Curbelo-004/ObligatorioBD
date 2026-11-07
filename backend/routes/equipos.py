@@ -52,8 +52,8 @@ def crear():
         return jsonify({"error": "Solo se pueden crear equipos en etapa inscripcion"}), 409
 
     lastrowid, _ = db.execute(
-        "INSERT INTO equipo (nombre, id_torneo, id_facultad, ci_capitan) VALUES (%s, %s, %s, %s)",
-        (nombre, id_torneo, id_facultad, data.get("ci_capitan")),
+        "INSERT INTO equipo (nombre, id_torneo, id_facultad) VALUES (%s, %s, %s)",
+        (nombre, id_torneo, id_facultad),
     )
     return jsonify({"id_equipo": lastrowid, "message": "Equipo creado"}), 201
 

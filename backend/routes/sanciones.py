@@ -56,8 +56,11 @@ def crear():
         return jsonify({"error": "ci_jugador, id_torneo y numero_fecha_inicio requeridos"}), 400
     if motivo not in MOTIVOS:
         return jsonify({"error": f"motivo debe ser uno de {MOTIVOS}"}), 400
-    if int(cantidad_fechas) < 1:
-        return jsonify({"error": "cantidad_fechas debe ser >= 1"}), 400
+    try:
+        if int(cantidad_fechas) < 1:
+            return jsonify({"error": "cantidad_fechas debe ser >= 1"}), 400
+    except (ValueError, TypeError):
+        return jsonify({"error": "cantidad_fechas debe ser un entero >= 1"}), 400
 
     lastrowid, _ = db.execute(
         "INSERT INTO sancion_jugador (ci_jugador, id_torneo, motivo, numero_fecha_inicio, cantidad_fechas) "
