@@ -1,6 +1,17 @@
+from datetime import timedelta
 from flask import Blueprint, request, jsonify
 import db
 from middleware.auth import require_auth
+
+
+def _fmt_time(td):
+    """Convierte timedelta (devuelto por MySQL para campos TIME) a string HH:MM:SS."""
+    if isinstance(td, timedelta):
+        total = int(td.total_seconds())
+        h, rem = divmod(total, 3600)
+        m, s = divmod(rem, 60)
+        return f"{h:02d}:{m:02d}:{s:02d}"
+    return str(td) if td is not None else None
 
 bp = Blueprint("reportes", __name__, url_prefix="/reportes")
 
@@ -47,7 +58,7 @@ def tabla_posiciones(id_torneo):
             FROM gol g
             JOIN planilla_partido pp ON g.id_partido = pp.id_partido AND g.ci_jugador = pp.ci_jugador
             JOIN partido p2 ON g.id_partido = p2.id_partido
-            GROUP BY id_partido
+            GROUP BY g.id_partido
         ) gf ON gf.id_partido = p.id_partido
         WHERE e.id_torneo = %s
         GROUP BY e.id_equipo, e.nombre
@@ -141,6 +152,10 @@ def canchas_turnos(id_torneo):
         GROUP BY p.id_turno, t.hora_inicio, t.hora_fin
         ORDER BY partidos DESC
     """, (id_torneo,))
+
+    for t in turnos:
+        t["hora_inicio"] = _fmt_time(t["hora_inicio"])
+        t["hora_fin"] = _fmt_time(t["hora_fin"])
 
     return jsonify({"canchas": canchas, "turnos": turnos})
 
@@ -238,8 +253,8 @@ def racha_invicta(id_torneo):
                          WHEN g.autogol=1 AND pp.id_equipo!=p2.id_equipo_visitante THEN 1
                          ELSE 0 END) AS goles_visit
             FROM gol g
-            JOIN planilla_partido pp ON g.id_partido=pp.id_partido AND g.ci_jugador=pp.ci_jugador
-            JOIN partido p2 ON g.id_partido=p2.id_partido
+            JOIN planilla_partido pp ON g.id_partido = pp.id_partido AND g.ci_jugador = pp.ci_jugador
+            JOIN partido p2 ON g.id_partido = p2.id_partido
             GROUP BY g.id_partido
         ) gf ON gf.id_partido = p.id_partido
         WHERE e.id_torneo = %s

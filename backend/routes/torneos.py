@@ -1,21 +1,22 @@
 from flask import Blueprint, request, jsonify
 import db
-from middleware.auth import require_admin
+from middleware.auth import require_admin, require_auth
 
 bp = Blueprint("torneos", __name__, url_prefix="/torneos")
 
-ESTADOS = {"inscripcion", "en_curso", "finalizado"}
+ESTADOS = {"inscripcion", "en curso", "finalizado"}
 SEMESTRES = {"1", "2"}
+_CAMPOS_UPDATE = {"nombre", "anio", "semestre", "fecha_inicio", "fecha_fin", "estado"}
 
 
 @bp.route("/", methods=["GET"])
-@require_admin
+@require_auth
 def listar():
     return jsonify(db.query_all("SELECT * FROM torneo"))
 
 
 @bp.route("/<int:id_torneo>", methods=["GET"])
-@require_admin
+@require_auth
 def obtener(id_torneo):
     row = db.query_one("SELECT * FROM torneo WHERE id_torneo = %s", (id_torneo,))
     if not row:
@@ -56,9 +57,9 @@ def actualizar(id_torneo):
     if "estado" in data and data["estado"] not in ESTADOS:
         return jsonify({"error": f"estado debe ser uno de {ESTADOS}"}), 400
 
-    campos = {k: v for k, v in data.items()}
+    campos = {k: v for k, v in data.items() if k in _CAMPOS_UPDATE}
     if not campos:
-        return jsonify({"error": "Sin campos para actualizar"}), 400
+        return jsonify({"error": "Sin campos válidos para actualizar"}), 400
 
     set_clause = ", ".join(f"{k} = %s" for k in campos)
     vals = list(campos.values()) + [id_torneo]

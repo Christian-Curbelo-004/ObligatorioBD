@@ -5,6 +5,7 @@ from middleware.auth import require_admin
 bp = Blueprint("jugadores", __name__, url_prefix="/jugadores")
 
 TIPOS_VALIDOS = {"grado", "posgrado", "docente", "funcionario"}
+_CAMPOS_UPDATE = {"nombre", "apellido", "email", "fecha_nacimiento", "id_facultad", "tipo"}
 
 
 def _validate(data, partial=False):
@@ -87,9 +88,9 @@ def actualizar(ci):
     if errors:
         return jsonify({"error": errors}), 400
 
-    campos = {k: v for k, v in data.items() if k != "ci"}
+    campos = {k: v for k, v in data.items() if k in _CAMPOS_UPDATE}
     if not campos:
-        return jsonify({"error": "Sin campos para actualizar"}), 400
+        return jsonify({"error": "Sin campos válidos para actualizar"}), 400
 
     set_clause = ", ".join(f"{k} = %s" for k in campos)
     vals = list(campos.values()) + [ci]

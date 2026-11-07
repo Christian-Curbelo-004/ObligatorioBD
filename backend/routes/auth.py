@@ -4,6 +4,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 import jwt
 import db
 import config
+from middleware.auth import require_admin
 
 bp = Blueprint("auth", __name__, url_prefix="/auth")
 
@@ -31,6 +32,7 @@ def login():
 
 
 @bp.route("/register", methods=["POST"])
+@require_admin
 def register():
     """Solo para setup inicial; en producción deshabilitar o proteger."""
     data = request.get_json(silent=True) or {}

@@ -1,9 +1,17 @@
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, time as time_type
 from flask import Blueprint, request, jsonify
 import db
-from middleware.auth import require_auth, require_admin
+from middleware.auth import require_auth
 
 bp = Blueprint("planillas", __name__, url_prefix="/partidos")
+
+
+def _td_to_time(td):
+    """MySQL devuelve campos TIME como timedelta; lo convierte a time."""
+    total = int(td.total_seconds())
+    h, rem = divmod(total, 3600)
+    m, s = divmod(rem, 60)
+    return time_type(h % 24, m, s)
 
 
 def _partido_jugable(partido):
@@ -11,7 +19,10 @@ def _partido_jugable(partido):
     turno = db.query_one("SELECT hora_fin FROM turno WHERE id_turno = %s", (partido["id_turno"],))
     if not turno:
         return False
-    dt_fin = datetime.combine(partido["dia"], turno["hora_fin"])
+    hora_fin = turno["hora_fin"]
+    if isinstance(hora_fin, timedelta):
+        hora_fin = _td_to_time(hora_fin)
+    dt_fin = datetime.combine(partido["dia"], hora_fin)
     return datetime.now() > dt_fin
 
 
@@ -25,15 +36,6 @@ def _esta_suspendido(ci_jugador, id_torneo, numero_fecha):
         (ci_jugador, id_torneo, numero_fecha, numero_fecha),
     )
     return row is not None
-
-
-def _aplicar_sancion_automatica(ci_jugador, id_torneo, motivo, numero_fecha_partido):
-    """Crea una suspensión de 1 fecha a partir de la siguiente fecha del torneo."""
-    db.execute(
-        "INSERT INTO sancion_jugador (ci_jugador, id_torneo, motivo, numero_fecha_inicio, cantidad_fechas) "
-        "VALUES (%s, %s, %s, %s, 1)",
-        (ci_jugador, id_torneo, motivo, numero_fecha_partido + 1),
-    )
 
 
 @bp.route("/<int:id_partido>/planilla", methods=["GET"])
@@ -172,22 +174,7 @@ def registrar_tarjeta(id_partido):
         "INSERT INTO tarjeta (id_partido, ci_jugador, minuto, color) VALUES (%s, %s, %s, %s)",
         (id_partido, ci, minuto, color),
     )
-
-    # Sanciones automáticas
-    if color == "roja":
-        _aplicar_sancion_automatica(ci, partido["id_torneo"], "roja", partido["numero_fecha"])
-    else:
-        # Contar amarillas acumuladas en la edición
-        amarillas = db.query_one(
-            "SELECT COUNT(*) AS c FROM tarjeta t "
-            "JOIN partido p ON t.id_partido = p.id_partido "
-            "WHERE t.ci_jugador = %s AND p.id_torneo = %s AND t.color = 'amarilla'",
-            (ci, partido["id_torneo"]),
-        )
-        if amarillas["c"] % 3 == 0:
-            _aplicar_sancion_automatica(
-                ci, partido["id_torneo"], "acumulacion_amarillas", partido["numero_fecha"]
-            )
+    # Las sanciones automáticas las maneja un trigger en la base de datos.
 
     return jsonify({"id_tarjeta": lastrowid, "message": "Tarjeta registrada"}), 201
 
@@ -197,5 +184,8 @@ def _dentro_plazo_correccion(partido):
     turno = db.query_one("SELECT hora_fin FROM turno WHERE id_turno = %s", (partido["id_turno"],))
     if not turno:
         return False
-    dt_fin = datetime.combine(partido["dia"], turno["hora_fin"])
+    hora_fin = turno["hora_fin"]
+    if isinstance(hora_fin, timedelta):
+        hora_fin = _td_to_time(hora_fin)
+    dt_fin = datetime.combine(partido["dia"], hora_fin)
     return datetime.now() <= dt_fin + timedelta(hours=48)

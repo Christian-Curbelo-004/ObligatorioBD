@@ -1,16 +1,17 @@
 from flask import Blueprint, request, jsonify
 import db
-from middleware.auth import require_admin
+from middleware.auth import require_admin, require_auth
 
 bp = Blueprint("equipos", __name__, url_prefix="/equipos")
 
 MAX_DOCENTES_FUNCIONARIOS = 2
 MIN_JUGADORES = 5
 MAX_JUGADORES = 10
+_CAMPOS_UPDATE = {"nombre", "ci_capitan"}
 
 
 @bp.route("/", methods=["GET"])
-@require_admin
+@require_auth
 def listar():
     return jsonify(db.query_all(
         "SELECT e.*, f.nombre AS nombre_facultad, t.nombre AS nombre_torneo "
@@ -21,7 +22,7 @@ def listar():
 
 
 @bp.route("/<int:id_equipo>", methods=["GET"])
-@require_admin
+@require_auth
 def obtener(id_equipo):
     row = db.query_one(
         "SELECT e.*, f.nombre AS nombre_facultad FROM equipo e "
@@ -61,9 +62,9 @@ def crear():
 @require_admin
 def actualizar(id_equipo):
     data = request.get_json(silent=True) or {}
-    campos = {k: v for k, v in data.items()}
+    campos = {k: v for k, v in data.items() if k in _CAMPOS_UPDATE}
     if not campos:
-        return jsonify({"error": "Sin campos para actualizar"}), 400
+        return jsonify({"error": "Sin campos válidos para actualizar"}), 400
 
     set_clause = ", ".join(f"{k} = %s" for k in campos)
     vals = list(campos.values()) + [id_equipo]
@@ -87,7 +88,7 @@ def eliminar(id_equipo):
 # --- Planteles ---
 
 @bp.route("/<int:id_equipo>/plantel", methods=["GET"])
-@require_admin
+@require_auth
 def ver_plantel(id_equipo):
     rows = db.query_all(
         "SELECT ejt.*, j.nombre, j.apellido, j.tipo "

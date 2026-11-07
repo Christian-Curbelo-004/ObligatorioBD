@@ -1,20 +1,22 @@
 from flask import Blueprint, request, jsonify
 import db
-from middleware.auth import require_admin
+from middleware.auth import require_admin, require_auth
 
 bp = Blueprint("complejos", __name__, url_prefix="/complejos")
 
 SUPERFICIES = {"sintetico", "parquet"}
+_CAMPOS_UPDATE_COMPLEJO = {"nombre", "direccion", "departamento"}
+_CAMPOS_UPDATE_CANCHA = {"superficie", "techada"}
 
 
 @bp.route("/", methods=["GET"])
-@require_admin
+@require_auth
 def listar():
     return jsonify(db.query_all("SELECT * FROM complejo"))
 
 
 @bp.route("/<int:id_complejo>", methods=["GET"])
-@require_admin
+@require_auth
 def obtener(id_complejo):
     row = db.query_one("SELECT * FROM complejo WHERE id_complejo = %s", (id_complejo,))
     if not row:
@@ -44,9 +46,9 @@ def crear():
 @require_admin
 def actualizar(id_complejo):
     data = request.get_json(silent=True) or {}
-    campos = {k: v for k, v in data.items()}
+    campos = {k: v for k, v in data.items() if k in _CAMPOS_UPDATE_COMPLEJO}
     if not campos:
-        return jsonify({"error": "Sin campos para actualizar"}), 400
+        return jsonify({"error": "Sin campos válidos para actualizar"}), 400
 
     set_clause = ", ".join(f"{k} = %s" for k in campos)
     vals = list(campos.values()) + [id_complejo]
@@ -70,7 +72,7 @@ def eliminar(id_complejo):
 # --- Canchas ---
 
 @bp.route("/<int:id_complejo>/canchas", methods=["GET"])
-@require_admin
+@require_auth
 def listar_canchas(id_complejo):
     return jsonify(db.query_all(
         "SELECT * FROM cancha WHERE id_complejo = %s", (id_complejo,)
@@ -110,9 +112,9 @@ def actualizar_cancha(id_complejo, nombre_cancha):
     if "superficie" in data and data["superficie"] not in SUPERFICIES:
         return jsonify({"error": f"superficie debe ser {SUPERFICIES}"}), 400
 
-    campos = {k: v for k, v in data.items()}
+    campos = {k: v for k, v in data.items() if k in _CAMPOS_UPDATE_CANCHA}
     if not campos:
-        return jsonify({"error": "Sin campos para actualizar"}), 400
+        return jsonify({"error": "Sin campos válidos para actualizar"}), 400
 
     set_clause = ", ".join(f"{k} = %s" for k in campos)
     vals = list(campos.values()) + [nombre_cancha, id_complejo]

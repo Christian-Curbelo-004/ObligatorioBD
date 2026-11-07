@@ -1,11 +1,13 @@
 from datetime import datetime, timezone, timedelta
 from flask import Blueprint, request, jsonify
 import db
-from middleware.auth import require_admin
+from middleware.auth import require_admin, require_auth
 
 bp = Blueprint("partidos", __name__, url_prefix="/partidos")
 
 ESTADOS = {"programado", "jugado", "postergado", "cancelado"}
+_CAMPOS_UPDATE = {"numero_fecha", "id_equipo_local", "id_equipo_visitante",
+                  "dia", "id_turno", "nombre_cancha", "id_complejo", "estado"}
 
 
 def _validar_programacion(data, id_partido=None):
@@ -75,7 +77,7 @@ def _validar_programacion(data, id_partido=None):
 
 
 @bp.route("/", methods=["GET"])
-@require_admin
+@require_auth
 def listar():
     id_torneo = request.args.get("id_torneo")
     if id_torneo:
@@ -86,7 +88,7 @@ def listar():
 
 
 @bp.route("/<int:id_partido>", methods=["GET"])
-@require_admin
+@require_auth
 def obtener(id_partido):
     row = db.query_one("SELECT * FROM partido WHERE id_partido = %s", (id_partido,))
     if not row:
@@ -139,7 +141,7 @@ def actualizar(id_partido):
         if error:
             return jsonify({"error": error}), 409
 
-    campos = {k: v for k, v in data.items()}
+    campos = {k: v for k, v in data.items() if k in _CAMPOS_UPDATE}
     set_clause = ", ".join(f"{k} = %s" for k in campos)
     vals = list(campos.values()) + [id_partido]
     db.execute(f"UPDATE partido SET {set_clause} WHERE id_partido = %s", vals)
