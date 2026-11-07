@@ -54,8 +54,8 @@ def crear():
 
     if not ci_jugador or not id_torneo or not numero_fecha_inicio:
         return jsonify({"error": "ci_jugador, id_torneo y numero_fecha_inicio requeridos"}), 400
-    if motivo not in MOTIVOS:
-        return jsonify({"error": f"motivo debe ser uno de {MOTIVOS}"}), 400
+    if motivo != "disciplinaria":
+        return jsonify({"error": "Solo se pueden crear manualmente sanciones disciplinarias; las de roja y acumulacion las genera el sistema"}), 400
     try:
         if int(cantidad_fechas) < 1:
             return jsonify({"error": "cantidad_fechas debe ser >= 1"}), 400
