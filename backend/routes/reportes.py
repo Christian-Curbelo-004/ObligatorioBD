@@ -26,29 +26,43 @@ def tabla_posiciones(id_torneo):
             e.nombre AS equipo,
             COUNT(p.id_partido) AS PJ,
             SUM(CASE
-                WHEN (p.id_equipo_local = e.id_equipo AND gf.goles_local > gf.goles_visit)
-                  OR (p.id_equipo_visitante = e.id_equipo AND gf.goles_visit > gf.goles_local) THEN 1
+                WHEN (p.id_equipo_local = e.id_equipo
+                      AND COALESCE(gf.goles_local,0) > COALESCE(gf.goles_visit,0))
+                  OR (p.id_equipo_visitante = e.id_equipo
+                      AND COALESCE(gf.goles_visit,0) > COALESCE(gf.goles_local,0)) THEN 1
                 ELSE 0 END) AS PG,
-            SUM(CASE WHEN gf.goles_local = gf.goles_visit THEN 1 ELSE 0 END) AS PE,
+            SUM(CASE WHEN p.id_partido IS NOT NULL
+                      AND COALESCE(gf.goles_local,0) = COALESCE(gf.goles_visit,0) THEN 1
+                ELSE 0 END) AS PE,
             SUM(CASE
-                WHEN (p.id_equipo_local = e.id_equipo AND gf.goles_local < gf.goles_visit)
-                  OR (p.id_equipo_visitante = e.id_equipo AND gf.goles_visit < gf.goles_local) THEN 1
+                WHEN (p.id_equipo_local = e.id_equipo
+                      AND COALESCE(gf.goles_local,0) < COALESCE(gf.goles_visit,0))
+                  OR (p.id_equipo_visitante = e.id_equipo
+                      AND COALESCE(gf.goles_visit,0) < COALESCE(gf.goles_local,0)) THEN 1
                 ELSE 0 END) AS PP,
-            SUM(CASE WHEN p.id_equipo_local = e.id_equipo THEN gf.goles_local ELSE gf.goles_visit END) AS GF,
-            SUM(CASE WHEN p.id_equipo_local = e.id_equipo THEN gf.goles_visit ELSE gf.goles_local END) AS GC,
-            SUM(CASE WHEN p.id_equipo_local = e.id_equipo THEN gf.goles_local - gf.goles_visit
-                     ELSE gf.goles_visit - gf.goles_local END) AS DG,
-            SUM(CASE
-                WHEN (p.id_equipo_local = e.id_equipo AND gf.goles_local > gf.goles_visit)
-                  OR (p.id_equipo_visitante = e.id_equipo AND gf.goles_visit > gf.goles_local) THEN 3
-                WHEN gf.goles_local = gf.goles_visit THEN 1
-                ELSE 0 END) AS puntos
+            COALESCE(SUM(CASE WHEN p.id_equipo_local = e.id_equipo
+                              THEN COALESCE(gf.goles_local,0)
+                              ELSE COALESCE(gf.goles_visit,0) END), 0) AS GF,
+            COALESCE(SUM(CASE WHEN p.id_equipo_local = e.id_equipo
+                              THEN COALESCE(gf.goles_visit,0)
+                              ELSE COALESCE(gf.goles_local,0) END), 0) AS GC,
+            COALESCE(SUM(CASE WHEN p.id_equipo_local = e.id_equipo
+                              THEN COALESCE(gf.goles_local,0) - COALESCE(gf.goles_visit,0)
+                              ELSE COALESCE(gf.goles_visit,0) - COALESCE(gf.goles_local,0) END), 0) AS DG,
+            COALESCE(SUM(CASE
+                WHEN (p.id_equipo_local = e.id_equipo
+                      AND COALESCE(gf.goles_local,0) > COALESCE(gf.goles_visit,0))
+                  OR (p.id_equipo_visitante = e.id_equipo
+                      AND COALESCE(gf.goles_visit,0) > COALESCE(gf.goles_local,0)) THEN 3
+                WHEN p.id_partido IS NOT NULL
+                     AND COALESCE(gf.goles_local,0) = COALESCE(gf.goles_visit,0) THEN 1
+                ELSE 0 END), 0) AS puntos
         FROM equipo e
-        JOIN partido p ON (p.id_equipo_local = e.id_equipo OR p.id_equipo_visitante = e.id_equipo)
+        LEFT JOIN partido p ON (p.id_equipo_local = e.id_equipo OR p.id_equipo_visitante = e.id_equipo)
             AND p.id_torneo = %s AND p.estado = 'jugado'
-        JOIN (
+        LEFT JOIN (
             SELECT
-                id_partido,
+                g.id_partido,
                 SUM(CASE WHEN g.autogol = 0 AND pp.id_equipo = p2.id_equipo_local THEN 1
                          WHEN g.autogol = 1 AND pp.id_equipo != p2.id_equipo_local THEN 1
                          ELSE 0 END) AS goles_local,
@@ -238,13 +252,15 @@ def racha_invicta(id_torneo):
     rows = db.query_all("""
         SELECT e.id_equipo, e.nombre AS equipo,
                SUM(CASE
-                   WHEN (p.id_equipo_local = e.id_equipo AND gf.goles_local >= gf.goles_visit)
-                     OR (p.id_equipo_visitante = e.id_equipo AND gf.goles_visit >= gf.goles_local)
+                   WHEN (p.id_equipo_local = e.id_equipo
+                         AND COALESCE(gf.goles_local,0) >= COALESCE(gf.goles_visit,0))
+                     OR (p.id_equipo_visitante = e.id_equipo
+                         AND COALESCE(gf.goles_visit,0) >= COALESCE(gf.goles_local,0))
                    THEN 1 ELSE 0 END) AS partidos_sin_perder
         FROM equipo e
-        JOIN partido p ON (p.id_equipo_local = e.id_equipo OR p.id_equipo_visitante = e.id_equipo)
+        LEFT JOIN partido p ON (p.id_equipo_local = e.id_equipo OR p.id_equipo_visitante = e.id_equipo)
             AND p.id_torneo = %s AND p.estado = 'jugado'
-        JOIN (
+        LEFT JOIN (
             SELECT g.id_partido,
                 SUM(CASE WHEN g.autogol=0 AND pp.id_equipo=p2.id_equipo_local THEN 1
                          WHEN g.autogol=1 AND pp.id_equipo!=p2.id_equipo_local THEN 1

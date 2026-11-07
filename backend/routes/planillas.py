@@ -61,6 +61,8 @@ def registrar_planilla(id_partido):
         return jsonify({"error": "Partido no encontrado"}), 404
     if partido["estado"] == "jugado":
         return jsonify({"error": "La planilla ya fue registrada"}), 409
+    if partido["estado"] in ("cancelado", "postergado"):
+        return jsonify({"error": "No se puede registrar planilla para un partido cancelado o postergado"}), 409
     if not _partido_jugable(partido):
         return jsonify({"error": "El partido aún no ha finalizado"}), 409
 
@@ -177,6 +179,40 @@ def registrar_tarjeta(id_partido):
     # Las sanciones automáticas las maneja un trigger en la base de datos.
 
     return jsonify({"id_tarjeta": lastrowid, "message": "Tarjeta registrada"}), 201
+
+
+@bp.route("/<int:id_partido>/goles/<int:id_gol>", methods=["DELETE"])
+@require_auth
+def eliminar_gol(id_partido, id_gol):
+    partido = db.query_one("SELECT * FROM partido WHERE id_partido = %s", (id_partido,))
+    if not partido:
+        return jsonify({"error": "Partido no encontrado"}), 404
+    if not _dentro_plazo_correccion(partido):
+        return jsonify({"error": "Fuera del plazo de corrección de 48 horas"}), 409
+
+    _, rowcount = db.execute(
+        "DELETE FROM gol WHERE id_gol = %s AND id_partido = %s", (id_gol, id_partido)
+    )
+    if rowcount == 0:
+        return jsonify({"error": "Gol no encontrado"}), 404
+    return jsonify({"message": "Gol eliminado"})
+
+
+@bp.route("/<int:id_partido>/tarjetas/<int:id_tarjeta>", methods=["DELETE"])
+@require_auth
+def eliminar_tarjeta(id_partido, id_tarjeta):
+    partido = db.query_one("SELECT * FROM partido WHERE id_partido = %s", (id_partido,))
+    if not partido:
+        return jsonify({"error": "Partido no encontrado"}), 404
+    if not _dentro_plazo_correccion(partido):
+        return jsonify({"error": "Fuera del plazo de corrección de 48 horas"}), 409
+
+    _, rowcount = db.execute(
+        "DELETE FROM tarjeta WHERE id_tarjeta = %s AND id_partido = %s", (id_tarjeta, id_partido)
+    )
+    if rowcount == 0:
+        return jsonify({"error": "Tarjeta no encontrada"}), 404
+    return jsonify({"message": "Tarjeta eliminada"})
 
 
 def _dentro_plazo_correccion(partido):
