@@ -4,7 +4,7 @@ const HORAS_CORRECCION = 48;
 
 // Acciones que no ofrece la API
 export const CAPACIDADES_BACKEND = {
-  borrarEventos: false,      // no hay DELETE de goles ni tarjetas
+  borrarEventos: true,
   corregirPlanilla: false,   // la lista de jugadores se carga una sola vez
   marcarJugadoManual: false, // el partido pasa a "jugado" al guardar la planilla
 };
@@ -210,12 +210,12 @@ export function crearApiBackend(http, ApiError) {
     torneos: {
       listar: async () => (await torneosRaw()).sort((a, b) => b.anio - a.anio || b.semestre - a.semestre),
       obtener: async (id) => (await torneosRaw()).find((t) => t.id_torneo === Number(id)),
-      crear: (b) => http('POST', '/torneos/', { body: { ...pick(b, ['nombre', 'anio', 'semestre', 'fecha_inicio', 'fecha_fin']), estado: b.estado === 'en curso' ? 'en_curso' : b.estado } }),
+      crear: (b) => http('POST', '/torneos/', { body: pick(b, ['nombre', 'anio', 'semestre', 'fecha_inicio', 'fecha_fin', 'estado']) }),
       async modificar(id, b) {
         const actual = (await torneosRaw()).find((t) => t.id_torneo === Number(id));
         const body = pick(b, ['nombre', 'anio', 'semestre', 'fecha_inicio', 'fecha_fin']);
         // El estado se manda solo si cambió
-        if (b.estado && b.estado !== actual?.estado) body.estado = b.estado === 'en curso' ? 'en_curso' : b.estado;
+        if (b.estado && b.estado !== actual?.estado) body.estado = b.estado;
         return http('PUT', `/torneos/${id}`, { body });
       },
       eliminar: (id) => http('DELETE', `/torneos/${id}`),
@@ -350,8 +350,8 @@ export function crearApiBackend(http, ApiError) {
       agregarGol: (id, b) => http('POST', `/partidos/${id}/goles`, { body: { ci_jugador: b.ci_jugador, minuto: Number(b.minuto), autogol: Boolean(b.autogol) } }),
       agregarTarjeta: (id, b) => http('POST', `/partidos/${id}/tarjetas`, { body: { ci_jugador: b.ci_jugador, minuto: Number(b.minuto), color: b.color } }),
     },
-    eliminarGol: noDisponible('El backend todavía no permite borrar goles.'),
-    eliminarTarjeta: noDisponible('El backend todavía no permite borrar tarjetas.'),
+    eliminarGol: (idPartido, idGol) => http('DELETE', `/partidos/${idPartido}/goles/${idGol}`),
+    eliminarTarjeta: (idPartido, idTarjeta) => http('DELETE', `/partidos/${idPartido}/tarjetas/${idTarjeta}`),
 
     sanciones: {
       async listar(q = {}) {

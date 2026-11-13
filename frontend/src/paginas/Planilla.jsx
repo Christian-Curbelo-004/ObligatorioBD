@@ -148,7 +148,7 @@ function Eventos({ titulo, tipo, lista, enPlanilla, editable, partido, onCambio 
               <span>{x.jugador}{x.autogol && <b className="chico" style={{ color: 'var(--peligro)' }}> (en contra)</b>}<span className="chico muted"> · {nombreEquipo(x.id_equipo)}</span></span>
               <span className="espacio" />
               {editable && CAPACIDADES.borrarEventos && <BotonAccion clase="btn chico fantasma" confirmar={`¿Borrar ${tipo === 'gol' ? 'el gol' : 'la tarjeta'}?`}
-                accion={() => (tipo === 'gol' ? api.eliminarGol(x.id_gol) : api.eliminarTarjeta(x.id_tarjeta))} onHecho={onCambio}>✕</BotonAccion>}
+                accion={() => (tipo === 'gol' ? api.eliminarGol(partido.id_partido, x.id_gol) : api.eliminarTarjeta(partido.id_partido, x.id_tarjeta))} onHecho={onCambio}>✕</BotonAccion>}
             </li>
           ))}
         </ul>

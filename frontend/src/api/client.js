@@ -117,8 +117,8 @@ const apiMock = {
     agregarGol: (id, body) => requestMock('POST', `/partidos/${id}/goles`, { body }),
     agregarTarjeta: (id, body) => requestMock('POST', `/partidos/${id}/tarjetas`, { body }),
   },
-  eliminarGol: (id) => requestMock('DELETE', `/goles/${id}`),
-  eliminarTarjeta: (id) => requestMock('DELETE', `/tarjetas/${id}`),
+  eliminarGol: (idPartido, idGol) => requestMock('DELETE', `/goles/${idGol}`),
+  eliminarTarjeta: (idPartido, idTarjeta) => requestMock('DELETE', `/tarjetas/${idTarjeta}`),
   sanciones: recurso('/sanciones'),
   reporte: (clave, idTorneo) => requestMock('GET', `/reportes/${clave}`, { query: { id_torneo: idTorneo } }),
 };
