@@ -3,7 +3,7 @@ CREATE TABLE login(
     password_hash VARCHAR(255) NOT NULL,
     rol ENUM('administrador', 'planillero') NOT NULL,
     activo BOOLEAN NOT NULL DEFAULT TRUE,
-    CONSTRAINT ck_login_correo CHECK (correo LIKE '%_@_%._%') /* chequear */
+    CONSTRAINT ck_login_correo CHECK (correo LIKE '%_@_%._%') 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT INTO login (correo, password_hash, rol) VALUES       -- usuarios de prueba
